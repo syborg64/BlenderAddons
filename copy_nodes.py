@@ -1,10 +1,10 @@
 bl_info = {
-    "name": "Copy Nodes",
+    "name": "Copy Math Nodes",
     "description": "copy math nodes from one tree to an other",
     "author": "Syborg64",
     "version": (0, 0, 3),
     "blender": (2, 93, 5),
-    "location": "3D View > Tools",
+    "location": "Node Editor > Tools",
     "warning": "",
     "wiki_url": "",
     "tracker_url": "",
@@ -36,7 +36,7 @@ class copy_nodes_props(PropertyGroup):
     dest_tree : StringProperty(
         name = "Destinnatio NodeTree",
         description = "Name of the destination NodeTree : Material, NodeGroup or GeometryNodeTree",
-        default = "GeometryNodes"
+        default = "Geometry Nodes"
     )
 
     offset_x : FloatProperty(
@@ -61,14 +61,14 @@ class WM_OT_copy_nodes_operator(Operator):
     def execute(self, context):
         scene = context.scene
         props = scene.copy_nodes_props
-        self.copy_nodes(props.tree1, props.tree2, [props.offset_x, props.offset_y])
+        self.copy_nodes(props.source_tree, props.dest_tree, [props.offset_x, props.offset_y])
         return {'FINISHED'}
 
     @staticmethod
-    def copy_nodes(tree1,  tree2, mathdict = None, offset = [0, 0]):
+    def copy_nodes(tree1,  tree2, offset = [0, 0], mathdict = None):
         #User definable mask for what to attempt to copy. note that most ShaderNode types are illegal
         if mathdict is None:
-            mathdict = ["NodeReroute", "ShaderNodeMath", "ShaderNodeVectorMath", "ShaderNodeCombineXYZ", "ShaderNodeSeparateXYZ", "ShaderNodeCombineRGB", "ShaderNodeSeparateRGB"]
+            mathdict = ["NodeValue", "NodeReroute", "ShaderNodeMath", "ShaderNodeVectorMath", "ShaderNodeCombineXYZ", "ShaderNodeSeparateXYZ", "ShaderNodeCombineRGB", "ShaderNodeSeparateRGB"]
         #
         #either give the NodeTree itself or the string name of the datablock
         print(tree1, tree2)
@@ -83,6 +83,7 @@ class WM_OT_copy_nodes_operator(Operator):
         if isinstance(tree2, bpy.types.Material):
             tree2 = tree2.node_tree or None
         if tree1 is None or tree2 is None:
+            print("Copy failed : invalid args")
             return 1
         print(tree1, tree2)
         #
@@ -122,13 +123,14 @@ class WM_OT_copy_nodes_operator(Operator):
                 reroute.location = [ofs.node.location[0] + offset[0] + 75, ofs.node.location[1] + offset[1] - 50]
                 ntosocket = reroute.outputs[0]
             nlink = tree2.links.new(nfromsocket, ntosocket)
+        print("copy finished")
         return 0
 
 
 class OBJECT_PT_copy_nodes_panel(Panel):
     bl_idname = 'OBJECT_PT_copy_nodes_panel'
     bl_label = 'Copy math Nodes'
-    bl_space_type = 'VIEW_3D'
+    bl_space_type = 'NODE_EDITOR'
     bl_region_type = 'UI'
     bl_category = 'Copy Nodes'
 
